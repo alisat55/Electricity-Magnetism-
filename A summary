@@ -1,0 +1,389 @@
+%A Summary
+
+
+%PART 1 
+
+% Identifying the variables
+
+%clear the workspace
+clearvars
+close all
+clc
+
+%measurements (given in the problem)
+Lx = 0.03; % meters
+Ly = Lx; % given
+x = linspace(0, Lx, 101); % create a vector of x values
+y = linspace(0, Ly, 101); % create a vector of y values
+x0 = Lx / 4; % given, x length (meters)
+y0 = Ly / 4; % given, y length (meters)
+% rho = 0; % given
+r0 = [x0, y0]; %radius
+dx = Lx / (numel(x) - 1); % given; incremental change in x (meters)
+dy = Ly / (numel(y) - 1); % given; incremental change in y (meters)
+R = Lx / 6; % given; outer radius (meters)
+rho0 = 8.85 * 10^(-12); % constant, C/m3; given
+e0 = rho0; % constant; given
+
+% Initialize the arrays to store potential and electric field magnitude
+V = zeros(numel(x), numel(y));
+E = zeros(numel(x), numel(y));
+
+% A for-loop for both scans
+for i = 1:numel(x)
+    for j = 1:numel(y)
+        r = [x(i), y(j)];
+        %Take the Euclidean norm of r-r0
+        dr = norm(r - r0); 
+
+        % Calculate electric potential INSIDE the sphere
+        if dr < R
+            V(i, j) = -(rho0 / (4 * e0)) * ((r(1) - x0)^2 + (r(2) - y0)^2); %potential
+            Ex(i,j) = rho0/(2*e0)*(x(i)-x0); %X-component of E
+            Ey(i,j) = rho0/(2*e0)*(y(j)-y0); %Y-component of E
+            
+        % Calculate electric potential OUTSIDE the sphere
+        else
+            V(i, j) = ((-rho0 * R^2) / (4 * e0)) * (1 + log(((r(1) - x0)^2 + (r(2) - y0)^2) / R^2));
+            Ex(i,j) = rho0*R^2/(2*e0*((x(i)-x0)^2+(y(j)-y0)^2))*(x(i)-x0);
+            Ey(i,j) = rho0*R^2/(2*e0*((x(i)-x0)^2+(y(j)-y0)^2))*(y(j)-y0);
+        end
+
+        % Calculate electric field magnitude (V/m)
+        E(i, j) = sqrt(Ex(i,j)^2+Ey(i,j)^2);
+    end
+end
+
+% Extract the line profiles for the plots below
+i0 = x0/dx+1; %starting point of the x-component 
+j0 = y0/dy+1; %starting point of the y-component 
+V_x0 = V(i0, :); %x-component of the potential
+V_y0 = V(:, j0); %y-component of the potential
+E_x0 = E(i0, :); %x-component of the electric field strength
+E_y0 = E(:, j0); %y-component of the electric field strength
+
+Plotting
+%first subplot
+subplot(3, 2, 1);
+%create a scan
+imagesc(x, y, V);
+%create a colorbar
+colorbar;
+axis xy; % Flip the y-axis to match the matrix coordinates
+axis equal %make sure the axes are equal
+xlabel('x (m)'); %x-label
+ylabel('y (m)'); %y-label
+title('Electric Potential Distribution (2D Image)'); %title
+
+%second subplot
+subplot(3, 2, 2);
+plot(y, V_x0); %plot the x-component of V vs. y
+xlabel('y (m)'); %x-label
+ylabel('Electric Potential (V)'); %y-label
+title('Electric Potential along x=x0'); %title
+
+%third subplot
+subplot(3, 2, 3);
+plot(x, V_y0); %plot the y-component of V vs. x
+xlabel('x (m)'); %x-axis 
+ylabel('Electric Potential (V)'); %y-label
+title('Electric Potential along y=y0'); %title
+
+%fourth subplot
+subplot(3, 2, 4);
+plot(y, E_x0); %plot the x-component of V vs. y
+xlabel('y (m)'); %x-axis label
+ylabel('Electric Field (V/m)'); %y-label 
+title('Electric Field along x=x0'); %title
+
+%fifth subplot
+subplot(3, 2, 5);
+plot(x, E_y0); %plot the y-component of V vs. x
+xlabel('x (m)'); %x-label
+ylabel('Electric Field (V/m)'); %y-label
+title('Electric Field along y=y0'); %title
+
+%sixth subplot
+subplot(3, 2, 6);
+contour(x, y, V,10); %contour plot of the electric potential
+xlabel('x (m)'); %x-axis label
+ylabel('y (m)'); %y-axis label
+title('Contour Plot of Electric Potential Function'); %title
+% put the hold on 
+hold on;  
+%create a quiver plot
+quiver(x, y, Ex', Ey');
+xlabel('x (m)'); %x-axis 
+ylabel('y (m)'); %y-axis 
+axis equal %make the axes equal 
+%title 
+title('Quiver Plot of Electric Field Magnitude along x=x0');
+hold off;
+%saving the data
+%assigning the variables to a new name 
+P5_1_x = x;
+P5_1_y = y;
+P5_1_E_x0 = E_x0;
+P5_1_E_y0 = E_y0;
+P5_1_V_x0 = V_x0;
+P5_1_V_y0 = V_y0;
+clearvars -except P5_1* %only save the variables that start with P5
+save("P5_1.mat") %save the file 
+
+%PART 2
+% The code below represents P2 with x0= Lx/4
+% and y0 = Ly/4
+
+% Declaring Variables
+Lx = 0.03; % meters
+Ly = Lx; % given
+nx = 100;
+ny = 100;
+dx = Lx / nx; % given
+dy = Ly / ny; % given
+i=1:(nx+1);
+j = 1:(ny+1);
+x = (i-1)*dx; % create a vector of x values
+y = (j-1)*dy; % create a vector of y values
+x0 = Lx / 4; % given
+y0 = Ly / 4; % given
+% rho = 0; % given
+r0 = [x0, y0];
+
+R = Lx / 6; % given
+rho0 = 8.85 * 10^(-12); % C/m3; given
+e0 = rho0; % given
+
+
+% define constants and variables for equation 2 (pg.3 from the project booklet)
+const1 = 1/(dx^2); 
+const2 = 1/(dy^2);
+const3 = (-2*const1)-(2*const2);
+
+%constants from equation 2
+a = const2/const3;
+b = a;
+c = const1/const3;
+d = c;
+
+%V-matrix of zeroes, initialized 
+V = zeros(nx+1,ny+1);
+
+%W from appendix C
+w = 2/(1+sqrt(1-(cos(pi/nx)^2)));
+
+
+% Initialize arrays to store potential and electric field magnitude
+S=zeros(numel(x),numel(y));
+
+% For-loop for both scans
+for i = 1:numel(x) 
+    for j = 1:numel(y)
+        r = [x(i), y(j)];
+        dr = norm(r - r0); %Euclidean norm of r-r0   
+
+        % Calculate electric potential, with formulae obtained in P1:
+        if dr < R %inside the sphere 
+            S(i,j) = -1*((rho0/e0)/const3); %equation 2, pg.3 of the booklet 
+            
+        else
+            S(i,j)=0; %initialize equation 2 
+        end
+    end
+end
+
+for i=1:nx+1
+    
+    %bottom boundary 
+    % j=1
+    j=1;
+    r = [x(i), y(j)];
+    %electric potential 
+    V(i, j) = ((-rho0 * R^2) / (4 * e0)) * (1 + log(((r(1) - x0)^2 + (r(2) - y0)^2) / R^2)); %volts
+    
+    %top boundary
+    %j=ny+1
+    j=ny+1;
+    r = [x(i), y(j)];
+    %electric potential 
+    V(i, j) = ((-rho0 * R^2) / (4 * e0)) * (1 + log(((r(1) - x0)^2 + (r(2) - y0)^2) / R^2)); %volts 
+end
+
+for j=1:ny+1
+    %left boundary 
+    %i=1
+    i=1;
+    r = [x(i), y(j)];
+    %electric potential 
+    V(i, j) = ((-rho0 * R^2) / (4 * e0)) * (1 + log(((r(1) - x0)^2 + (r(2) - y0)^2) / R^2)); %volts 
+    
+    %right boundary
+    %i=nx+1
+    i=nx+1;
+    r = [x(i), y(j)];
+    %electric potential 
+    V(i, j) = ((-rho0 * R^2) / (4 * e0)) * (1 + log(((r(1) - x0)^2 + (r(2) - y0)^2) / R^2)); %volts
+end
+
+%finding the sum of the square of S (equation 2, pg.3)
+dnorms = sum(sum(S.^2));
+
+%new figure 
+figure
+
+%image scan of the absolute value of potential 
+imagesc(abs(V))
+
+%adding a color 
+colorbar
+
+%epsilon; given 
+epsilon = 10^-10;
+
+%sor.m function from Canvas modules 
+[V,it] = sor(a, b, c, d, V, S, w, epsilon, nx+1, ny+1, dnorms);
+
+[Ex,Ey] = gradient(-V,dx,dy);
+
+
+% Plotting E 
+%absolute magnitude of x and y-components 
+E = (Ex.^2+Ey.^2).^(1/2);
+%starting point of the x-variables
+i0 = x0/dx+1;
+%starting point of the y-variables
+j0 = y0/dy+1;
+%x-component of V
+V_x0 = V(i0, :);
+%y-component of V
+V_y0 = V(:,j0);
+%x-component of E
+E_x0 = E(i0, :);
+%y-component of E
+E_y0 = E(:, j0);
+load P5_1.mat %load the P5_1 file
+
+figure
+% Plotting the first plot
+subplot(3, 2, 1);
+imagesc(x, y, V); %image scan
+colorbar; %create a colorbar
+axis xy; % Flip the y-axis to match the matrix coordinates
+axis equal %make sure the axes are equal 
+xlabel('x (m)'); %x-axis 
+ylabel('y (m)'); %y-axis
+title('Potential Distribution (2D Image)'); %title
+
+%subplot 2
+subplot(3, 2, 2);
+plot(y, V_x0,P5_1_y,P5_1_V_x0); %plotting the x-component of V
+legend('P5','P2') %legend 
+xlabel('y (m)'); %x-axis 
+ylabel('Electric Potential (V)'); %y-axis 
+title('Potential along x=x0'); %title 
+
+%subplot 3
+subplot(3, 2, 3);
+plot(x, V_y0, P5_1_x,P5_1_V_y0); %plotting the y-component of V
+legend('P5','P2')
+xlabel('x (m)');
+ylabel('Electric Potential (V)');
+title('Potential along y=y0');
+
+%subplot 4
+subplot(3, 2, 4); 
+plot(y, E_x0, P5_1_y,P5_1_E_x0);  %plotting the x-component of V
+legend('P5','P2')
+xlabel('y (m)');
+ylabel('Electric Field (V/m)');
+title('Electric Field along x=x0'); 
+
+%subplot 5
+subplot(3, 2, 5);
+plot(x, E_y0, P5_1_x, P5_1_E_y0); %plotting the y-component of E
+legend('P5','P2')
+xlabel('x (m)');
+ylabel('Electric Field (V/m)');
+title('Electric Field along y=y0');
+
+%subplot 6
+subplot(3, 2, 6);
+contour(x, y, V,10); %plotting V on the same plot as x and y 
+xlabel('x (m)');
+ylabel('y (m)');
+title('Contour Plot of Electric Potential Function'); 
+
+%hold on to plot another graph on the axis 
+hold on;
+quiver(x, y, Ex, Ey); %quiver plot 
+xlabel('x (m)');
+ylabel('y (m)');
+axis equal %make sure the axes are equal 
+title('Quiver Plot of Electric Field Magnitude along x=x0');
+hold off;
+
+
+%sor.m function from the Canvas Modules
+
+function [f, it] = sor(a, b, c, d, f, s, w, epsilon, nx, ny, dnorms)
+% EE 411 Spring 2007
+% Author: (c) Victor P. Pasko, Ph.D., Penn State University
+% email: vpasko@psu.edu
+%
+% [f, it] = sor(a, b, c, d, f, s, w, epsilon, nx, ny, dnorms) solves
+% five-point difference equation for f(ix,iy) with constant coefficients
+% a, b, c, and d:
+%
+% a*f(ix,iy-1) + b*f(ix,iy+1) + c*f(ix-1,iy) + d*f(ix+1,iy) + f(ix,iy) = s(ix,iy)
+%
+% The solution is obtained in a domain consisting of nx+1 by ny+1 grid points.
+% The boundary values of f (i.e., at ix=1, ix=nx+1, iy=1:ny+1; and iy=1, iy=ny+1, ix=1:nx+1)
+% should be specified in matrix f before calling the function,
+% and values of f inside of the domain (ix=2:nx, iy=2:ny)
+% are obtained by successive overrelaxation (SOR) technique.
+%
+% w is a relaxation factor (1<w<2). The best value is
+% w=2/(1+sqrt(1-rho_sor^2)), where in the case of
+% the two-dimensional Poisson equation in the square (nx=ny)
+% rho_sor=cos(pi/nx).
+%
+% epsilon - desired accuracy of the solution.
+%
+% A good approximation for dnorms is
+%
+% dnorms = sum(sum(s.^2))
+%
+% Reference:
+%
+% Hockney, R. W. and J. W. Eastwood, Computer simulation using particles,
+% McGraw-Hill, 1981, pages 174-181
+
+it = 0; % number of iterations
+
+while true
+
+    it = it + 1;
+    dnorm = 0;
+    for ix = 1:nx
+        for iy = 1:ny
+            if ix == 1 || ix == nx || iy == 1 || iy == ny
+                continue; % Skip boundary points
+            end
+            residual = a*f(ix, iy-1) + b*f(ix, iy+1) + ...
+                c*f(ix-1, iy) + d*f(ix+1, iy) + f(ix, iy) - s(ix, iy);
+            dnorm = dnorm + residual^2;
+            f(ix, iy) = f(ix, iy) - w * residual;
+        end
+    end
+
+    if dnorm/dnorms < epsilon
+        break;
+    end
+
+    if it > 10000
+        warning('Solution has not been reached in 10000 iterations.')
+        break;
+    end
+
+end
+end
