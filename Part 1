@@ -1,0 +1,131 @@
+%Quiver plot for electric potential
+% Declaring Variables
+clearvars
+close all
+clc
+
+%variables 
+Lx = 0.03; % meters
+Ly = Lx; % given
+
+x = linspace(0, Lx, 101); % create a vector of x values
+y = linspace(0, Ly, 101); % create a vector of y values
+
+x0 = Lx / 2; % given
+y0 = Ly / 2; % given
+
+% rho = 0; % given
+r0 = [x0, y0];
+
+dx = Lx / (numel(x) - 1); % given
+dy = Ly / (numel(y) - 1); % given
+R = Lx / 6; % given
+
+rho0 = 8.85 * 10^(-12); % C/m3; given, a constant
+e0 = rho0; % given
+
+% Initialize arrays to store potential and the electric field magnitude
+V = zeros(numel(x), numel(y));
+E = zeros(numel(x), numel(y));
+
+% A loop for the x and y-scans
+for i = 1:numel(x)
+    for j = 1:numel(y)
+        r = [x(i), y(j)];
+        dr = norm(r - r0);
+
+        % Calculate the electric potential
+        if dr < R
+            V(i, j) = -(rho0 / (4 * e0)) * ((r(1) - x0)^2 + (r(2) - y0)^2);
+            Ex(i,j) = rho0/(2*e0)*(x(i)-x0);
+            Ey(i,j) = rho0/(2*e0)*(y(j)-y0);
+        else
+            V(i, j) = ((-rho0 * R^2) / (4 * e0)) * (1 + log(((r(1) - x0)^2 + (r(2) - y0)^2) / R^2));
+            Ex(i,j) = rho0*R^2/(2*e0*((x(i)-x0)^2+(y(j)-y0)^2))*(x(i)-x0);
+            Ey(i,j) = rho0*R^2/(2*e0*((x(i)-x0)^2+(y(j)-y0)^2))*(y(j)-y0);
+        end
+
+        % Calculate the electric field magnitude
+        E(i, j) = sqrt(Ex(i,j)^2+Ey(i,j)^2);
+    end
+end
+
+% Extracting the line profiles
+V_x0 = V(round(x0 / Lx * (numel(x) - 1)), :);
+V_y0 = V(:, round(y0 / Ly * (numel(y) - 1)));
+E_x0 = E(round(x0 / Lx * (numel(x) - 1)), :);
+E_y0 = E(:, round(y0 / Ly * (numel(y) - 1)));
+%%
+% PLOTTING
+
+%subplot 1
+subplot(3, 2, 1);
+imagesc(x, y, V);
+%creating a colorbar
+colorbar; 
+
+% Flip the y-axis to match the matrix coordinates
+axis xy; 
+axis equal
+xlabel('x');
+ylabel('y');
+title('Electric Potential Distribution (2D Image)');
+%%
+%subplot 2
+subplot(3, 2, 2);
+plot(y, V_x0);
+xlabel('y');
+ylabel('Electric Potential');
+title('Electric Potential along x=x0');
+
+%subplot 3 
+subplot(3, 2, 3);
+plot(x, V_y0);
+xlabel('x');
+ylabel('Electric Potential');
+title('Electric Potential along y=y0');
+
+%subplot 4
+subplot(3, 2, 4);
+plot(y, E_x0);
+xlabel('y');
+ylabel('Electric Field');
+title('Electric Field along x=x0');
+
+%subplot 5 
+subplot(3, 2, 5);
+plot(x, E_y0);
+xlabel('x');
+ylabel('Electric Field');
+title('Electric Field along y=y0');
+%%
+%subplot 6
+subplot(3, 2, 6);
+contour(x, y, V,10);
+xlabel('x');
+ylabel('y');
+title('Contour Plot of Electric Potential Function');
+hold on;
+
+%quiver plot
+quiver(x, y, Ex', Ey');
+xlabel('x');
+ylabel('y');
+axis equal %making the axes equal 
+title('Quiver Plot of Electric Field Magnitude along x=x0');
+hold off;
+
+%SAVING THE DATA 
+
+%assigning the values to x and y 
+P2_x = x;
+P2_y = y;
+P2_E_x0 = E_x0;
+P2_E_y0 = E_y0;
+P2_V_x0 = V_x0;
+P2_V_y0 = V_y0;
+
+%clear all the variables except the ones that have a P2 in their names
+clearvars -except P2* 
+
+save("P2.mat")
