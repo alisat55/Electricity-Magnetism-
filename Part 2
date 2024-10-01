@@ -1,0 +1,213 @@
+                                           %Part 2: Solving the Laplace equation & Plotting the electric field magnitude
+
+clearvars
+close all
+clc
+
+% Declaring Variables
+
+Lx = 0.03; % meters
+Ly = Lx; % given
+nx = 20;
+ny = 20;
+dx = Lx / nx; % given
+dy = Ly / ny; % given
+i=1:(nx+1);
+j = 1:(ny+1);
+x = (i-1)*dx; % create a vector of x values
+y = (j-1)*dy; % create a vector of y values
+x0 = Lx / 2; % given
+y0 = Ly / 2; % given
+% rho = 0; % given
+r0 = [x0, y0];
+
+R = Lx / 6; % given
+rho0 = 8.85 * 10^(-12); % C/m3; given
+e0 = rho0; % given
+
+
+% define constants and variables for Laplace calculation
+const1 = 1/(dx^2);
+const2 = 1/(dy^2);
+const3 = (-2*const1)-(2*const2);
+
+a = const2/const3;
+b = a;
+c = const1/const3;
+d = c;
+
+f = zeros(nx+1,ny+1);
+%The matrix s should be the same size as f
+w = 2/(1+sqrt(1-(cos(pi/nx)^2)));
+
+
+% Initialize arrays to store potential and electric field magnitude
+S=zeros(numel(x),numel(y));
+% Loop for both scans
+for i = 1:numel(x)
+    for j = 1:numel(y)
+        r = [x(i), y(j)];
+        dr = norm(r - r0);
+        
+        % Calculate electric potential
+        if dr < R
+            S(i,j) = -1*((rho0/e0)/const3);
+
+           % V(i, j) = (rho0 / (4 * e0)) * ((r(1) - x0)^2 - (r(2) - y0)^2);
+        else
+            S(i,j)=0;
+           % V(i, j) = ((-rho0 * R^2) / (4 * e0)) * (1 + log(((r(1) - x0)^2 + (r(2) - y0)^2) / R^2));
+        end
+        
+        % Calculate electric field magnitude
+        %E(i, j) = abs((rho0 / (2 * e0)) * (r(2) - y0));
+    end
+end
+dnorms = sum(sum(S.^2));
+figure
+imagesc(S)
+colorbar
+epsilon = 10^-10;
+
+[f, it] = sor(a, b, c, d, f, S, w, epsilon, nx, ny, dnorms);
+
+V=f;
+[Ex,Ey] = gradient(-V,dx,dy);
+
+
+% Plotting
+E = (Ex.^2+Ey.^2).^(1/2);
+i0 = x0/dx+1;
+j0 = y0/dy+1;
+V_x0 = V(i0, :);
+V_y0 = V(:,j0);
+E_x0 = E(i0, :);
+E_y0 = E(:, j0);
+%%
+figure
+% Plotting
+subplot(3, 2, 1);
+imagesc(x, y, V);
+colorbar;
+axis xy; % Flip the y-axis to match the matrix coordinates
+axis equal
+xlabel('x');
+ylabel('y');
+title('Electric Potential Distribution (2D Image)');
+%%
+subplot(3, 2, 2);
+plot(y, V_x0);
+xlabel('y');
+ylabel('Electric Potential');
+title('Electric Potential along x=x0');
+
+subplot(3, 2, 3);
+plot(x, V_y0);
+xlabel('x');
+ylabel('Electric Potential');
+title('Electric Potential along y=y0');
+
+subplot(3, 2, 4);
+plot(y, E_x0);
+xlabel('y');
+ylabel('Electric Field');
+title('Electric Field along x=x0');
+
+subplot(3, 2, 5);
+plot(x, E_y0);
+xlabel('x');
+ylabel('Electric Field');
+title('Electric Field along y=y0');
+%%
+subplot(3, 2, 6);
+contour(x, y, V,10);
+xlabel('x');
+ylabel('y');
+title('Contour Plot of Electric Potential Function');
+hold on;
+quiver(x, y, Ex, Ey);
+xlabel('x');
+ylabel('y');
+axis equal
+title('Quiver Plot of Electric Field Magnitude along x=x0');
+hold off;
+
+%pick a value for omega
+omega = linspace(1,0.05,2);
+iterations = zeros(size(omega));
+ind = 1;
+for w = 1:0.05:2
+    [f, it] = sor(a, b, c, d, f, S, w, epsilon, nx, ny, dnorms);
+    iterations(ind) = it;
+    ind = ind+1;
+end
+
+%Plot w vs. number of iterations
+subplot(4, 1, 1);
+plot(omega, iterations);
+xlabel('Omega Value (1<w<2)');
+ylabel('Number of Iterations');
+title('Electric Potential along x=x0');
+
+function [f, it] = sor(a, b, c, d, f, s, w, epsilon, nx, ny, dnorms)
+% EE 411 Spring 2007
+% Author: (c) Victor P. Pasko, Ph.D., Penn State University
+% email: vpasko@psu.edu
+%
+% [f, it] = sor(a, b, c, d, f, s, w, epsilon, nx, ny, dnorms) solves
+% five-point difference equation for f(ix,iy) with constant coefficients
+% a, b, c, and d:
+%
+% a*f(ix,iy-1) + b*f(ix,iy+1) + c*f(ix-1,iy) + d*f(ix+1,iy) + f(ix,iy) = s(ix,iy)
+%
+% The solution is obtained in a domain consisting of nx+1 by ny+1 grid points.
+% The boundary values of f (i.e., at ix=1, ix=nx+1, iy=1:ny+1; and iy=1, iy=ny+1, ix=1:nx+1)
+% should be specified in matrix f before calling the function,
+% and values of f inside of the domain (ix=2:nx, iy=2:ny)
+% are obtained by successive overrelaxation (SOR) technique.
+%
+% w is a relaxation factor (1<w<2). The best value is
+% w=2/(1+sqrt(1-rho_sor^2)), where in the case of
+% the two-dimensional Poisson equation in the square (nx=ny)
+% rho_sor=cos(pi/nx).
+%
+% epsilon - desired accuracy of the solution.
+%
+% A good approximation for dnorms is
+%
+% dnorms = sum(sum(s.^2))
+%
+% Reference:
+%
+% Hockney, R. W. and J. W. Eastwood, Computer simulation using particles,
+% McGraw-Hill, 1981, pages 174-181
+
+it = 0; % number of iterations
+
+while true
+
+    it = it + 1;
+    dnorm = 0;
+    for ix = 1:nx
+        for iy = 1:ny
+            if ix == 1 || ix == nx || iy == 1 || iy == ny
+                continue; % Skip boundary points
+            end
+            residual = a*f(ix, iy-1) + b*f(ix, iy+1) + ...
+                c*f(ix-1, iy) + d*f(ix+1, iy) + f(ix, iy) - s(ix, iy);
+            dnorm = dnorm + residual^2;
+            f(ix, iy) = f(ix, iy) - w * residual;
+        end
+    end
+
+    if dnorm/dnorms < epsilon
+        break;
+    end
+
+    if it > 10000
+        warning('Solution has not been reached in 10000 iterations.')
+        break;
+    end
+
+end
+end
